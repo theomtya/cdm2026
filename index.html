@@ -276,8 +276,11 @@ async function fetchScore(m) {
   if(cache[m.id]&&Date.now()-cache[m.id].ts<60000) return cache[m.id].data;
   try {
     const st = getSt(m);
-    // Utiliser la date heure de Paris pour l'appel API
-    const ds = m.date.toLocaleDateString('fr-FR', {timeZone:'Europe/Paris', year:'numeric', month:'2-digit', day:'2-digit'}).split('/').reverse().join('-');
+    // Chercher sur la date UTC du match
+    const ds = m.date.toISOString().split('T')[0];
+    // Si le match est après 20h UTC, chercher aussi le lendemain (cas Brésil vs Maroc 22h UTC = 14 juin Paris)
+    const hour = m.date.getUTCHours();
+    const ds2 = hour >= 20 ? new Date(m.date.getTime() + 86400000).toISOString().split('T')[0] : null;
     const url = st==='live'
       ? `/api/score?live=1`
       : `/api/score?matchDate=${ds}`;
@@ -286,7 +289,7 @@ async function fetchScore(m) {
     const j = await r.json();
 
     // Structure API: j.response.matches[] ou j.response.live[]
-    const list = (j.response?.matches || j.response?.live || []);
+    let list = (j.response?.matches || j.response?.live || []);
     const t1 = m.names[0].toLowerCase();
     const t2 = m.names[1].toLowerCase();
 
@@ -296,17 +299,34 @@ async function fetchScore(m) {
       'sénégal':'senegal','irak':'iraq','norvège':'norway','rd congo':'dr congo',
       'ouzbékistan':'uzbekistan','colombie':'colombia','maroc':'morocco',
       'haïti':'haiti','écosse':'scotland','cap-vert':'cape verde',
-      'arabie saoudite':'saudi arabia','uruguay':'uruguay'
+      'arabie saoudite':'saudi arabia','uruguay':'uruguay',
+      'égypte':'egypt','chili':'chile','nigeria':'nigeria','pérou':'peru',
+      'côte d\'ivoire':'ivory coast','irlande du nord':'northern ireland'
     };
     const en1 = nameMap[t1] || t1;
     const en2 = nameMap[t2] || t2;
-    const found = list.find(x => {
+
+    const findMatch = (lst) => lst.find(x => {
       const h = (x.home?.name || '').toLowerCase();
       const a = (x.away?.name || '').toLowerCase();
       const matchFwd = (h.includes(en1)||en1.includes(h)) && (a.includes(en2)||en2.includes(a));
       const matchRev = (h.includes(en2)||en2.includes(h)) && (a.includes(en1)||en1.includes(a));
       return matchFwd || matchRev;
     });
+
+    let found = findMatch(list);
+
+    // Si pas trouvé et qu'il y a une date +1 à essayer
+    if(!found && ds2 && st!=='live') {
+      try {
+        const r2 = await fetch(`/api/score?matchDate=${ds2}`);
+        if(r2.ok) {
+          const j2 = await r2.json();
+          const list2 = (j2.response?.matches || j2.response?.live || []);
+          found = findMatch(list2);
+        }
+      } catch(e) {}
+    }
 
     let d = null;
     if(found) {
