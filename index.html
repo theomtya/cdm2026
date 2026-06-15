@@ -96,6 +96,7 @@ h1 span{color:var(--red);}
 
 .card-right{flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:4px;}
 .card-chevron{color:rgba(255,255,255,.15);font-size:16px;}
+.card-countdown-inline{font-size:10px;font-weight:700;color:var(--orange);background:rgba(244,131,31,.12);border:1px solid rgba(244,131,31,.2);border-radius:6px;padding:2px 7px;white-space:nowrap;font-variant-numeric:tabular-nums;flex-shrink:0;margin-left:2px;}
 .card-score{font-size:17px;font-weight:800;color:var(--orange);font-variant-numeric:tabular-nums;background:rgba(244,131,31,.1);border:1px solid rgba(244,131,31,.2);border-radius:8px;padding:6px 10px;min-width:58px;text-align:center;}
 .card-score.loading{color:var(--muted2);font-size:11px;background:none;border-color:rgba(255,255,255,.05);}
 
@@ -114,6 +115,7 @@ h1 span{color:var(--red);}
 .modal-mflag{font-size:32px;}
 .modal-mname{font-size:20px;font-weight:800;text-transform:uppercase;letter-spacing:-.5px;}
 .modal-mvs{font-size:10px;color:var(--muted);letter-spacing:2px;}
+.modal-countdown{font-size:11px;font-weight:700;color:var(--orange);background:rgba(244,131,31,.12);border:1px solid rgba(244,131,31,.2);border-radius:8px;padding:4px 10px;white-space:nowrap;font-variant-numeric:tabular-nums;}
 .modal-body{padding:16px 16px 20px;display:flex;flex-direction:column;gap:10px;}
 .local-time-block{background:rgba(244,131,31,.08);border:1px solid rgba(244,131,31,.18);border-radius:16px;padding:18px;text-align:center;}
 .lt-label{font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--orange);margin-bottom:8px;}
@@ -198,6 +200,7 @@ h1 span{color:var(--red);}
         <span class="modal-mflag" id="mF1"></span><span class="modal-mname" id="mN1"></span>
         <span class="modal-mvs">vs</span>
         <span class="modal-mflag" id="mF2"></span><span class="modal-mname" id="mN2"></span>
+        <span class="modal-countdown" id="mCountdown" style="display:none"></span>
       </div>
     </div>
     <div class="modal-body">
@@ -395,7 +398,7 @@ function refreshCardCountdowns() {
     if(!m) return;
     const txt = cardCountdown(m);
     el.textContent = txt || '';
-    el.style.display = txt ? 'block' : 'none';
+    el.style.display = txt ? 'inline-block' : 'none';
   });
 }
 setInterval(refreshCardCountdowns, 30000);
@@ -410,7 +413,6 @@ function makeCard(m, isPlayed) {
   const badge = m.type==='cdm'?`<span class="badge badge-cdm">${m.group}</span>`:`<span class="badge badge-ami">Amical</span>`;
   const liveBadge = st==='live'?`<span class="badge badge-live"><span class="live-dot"></span>Live</span>`:'';
   const cdTxt = !isPlayed ? cardCountdown(m) : null;
-  const cdHTML = cdTxt ? `<div class="card-countdown" data-cdid="${m.id}">${cdTxt}</div>` : `<div class="card-countdown" data-cdid="${m.id}" style="display:none"></div>`;
 
   let rightEl;
   if(isPlayed) {
@@ -419,11 +421,14 @@ function makeCard(m, isPlayed) {
     rightEl = `<div class="card-right"><span class="card-chevron">›</span></div>`;
   }
 
+  const cdInline = cdTxt
+    ? `<span class="card-countdown-inline" data-cdid="${m.id}">${cdTxt}</span>`
+    : `<span class="card-countdown-inline" data-cdid="${m.id}" style="display:none"></span>`;
+
   card.innerHTML = `
     <div class="card-left">
       <div class="card-hour">${fmtP(m.date)}</div>
       <div class="card-day">${fmtDS(m.date)}</div>
-      ${cdHTML}
     </div>
     <div class="card-center">
       <div class="card-teams">
@@ -435,14 +440,12 @@ function makeCard(m, isPlayed) {
     </div>
     ${rightEl}`;
 
-  if(isPlayed && m.type==='cdm') {
+  if(isPlayed) {
     fetchScore(m).then(data => {
       const el=document.getElementById('sc-'+m.id); if(!el) return;
       el.classList.remove('loading');
       el.textContent=(data&&data.home!=null&&data.status==='FINISHED')?`${data.home}—${data.away}`:'—';
     });
-  } else if(isPlayed) {
-    setTimeout(()=>{const el=document.getElementById('sc-'+m.id);if(el){el.classList.remove('loading');el.textContent='—';}},0);
   }
 
   card.addEventListener('click', ()=>openModal(m));
@@ -551,6 +554,12 @@ async function openModal(m) {
   document.getElementById('mComp').textContent=m.type==='cdm'?`🏆 CDM 2026 — ${m.group}`:'⚽ Match Amical';
   document.getElementById('mF1').textContent=m.flags[0]; document.getElementById('mN1').textContent=m.names[0];
   document.getElementById('mF2').textContent=m.flags[1]; document.getElementById('mN2').textContent=m.names[1];
+
+  // Countdown dans la modal
+  const mCd = document.getElementById('mCountdown');
+  const cdTxtModal = getSt(m) === 'upcoming' ? cardCountdown(m) : null;
+  if(cdTxtModal) { mCd.textContent = '⏱ '+cdTxtModal; mCd.style.display='inline-block'; }
+  else { mCd.style.display='none'; }
   document.getElementById('mLocalTime').textContent=fmtL(m.date,m.tzLocal);
   document.getElementById('mLocalCity').textContent=`à ${m.tzCity}`;
   document.getElementById('mParis').textContent=`${fmtP(m.date)} heure de Paris`;
@@ -565,7 +574,7 @@ async function openModal(m) {
   if(m.tv) document.getElementById('mTV').textContent=m.tv;
   const sb=document.getElementById('mScoreBtn'),ic=document.getElementById('mScoreIcon'),lb=document.getElementById('mScoreLabel'),su=document.getElementById('mScoreSub');
   applyScore(sb,ic,lb,su,null,m,st);
-  if(st!=='upcoming'&&m.type==='cdm'){
+  if(st!=='upcoming'){
     if(liveIv){clearInterval(liveIv);liveIv=null;}
     fetchScore(m).then(d=>applyScore(sb,ic,lb,su,d,m,st));
     if(st==='live') liveIv=setInterval(()=>fetchScore(m).then(d=>applyScore(sb,ic,lb,su,d,m,st)),60000);
