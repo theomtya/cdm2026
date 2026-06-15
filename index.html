@@ -96,6 +96,8 @@ h1 span{color:var(--red);}
 
 .card-right{flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:4px;}
 .card-chevron{color:rgba(255,255,255,.15);font-size:16px;}
+.card-weather{display:inline-flex;align-items:center;gap:3px;font-size:10px;color:var(--muted);background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:6px;padding:2px 7px;white-space:nowrap;}
+.card-weather-temp{color:var(--cream);font-weight:600;}
 .card-countdown-inline{font-size:10px;font-weight:700;color:var(--orange);background:rgba(244,131,31,.12);border:1px solid rgba(244,131,31,.2);border-radius:6px;padding:2px 7px;white-space:nowrap;font-variant-numeric:tabular-nums;flex-shrink:0;margin-left:2px;}
 .card-score{font-size:17px;font-weight:800;color:var(--orange);font-variant-numeric:tabular-nums;background:rgba(244,131,31,.1);border:1px solid rgba(244,131,31,.2);border-radius:8px;padding:6px 10px;min-width:58px;text-align:center;}
 .card-score.loading{color:var(--muted2);font-size:11px;background:none;border-color:rgba(255,255,255,.05);}
@@ -239,22 +241,22 @@ h1 span{color:var(--red);}
 
 <script>
 const ALL = [
-  {id:'pt-ami-1',flags:['🇵🇹','🇨🇱'],names:['Portugal','Chili'],date:new Date('2026-06-06T17:45:00Z'),type:'amical',group:null,tv:null,stade:'Estádio José Alvalade',ville:'Lisbonne, Portugal',mapQuery:'Estadio+Jose+Alvalade+Lisbon',tzLocal:'Europe/Lisbon',tzCity:'Lisbonne',filter:['pt']},
-  {id:'br-ami-1',flags:['🇧🇷','🇪🇬'],names:['Brésil','Égypte'],date:new Date('2026-06-07T22:00:00Z'),type:'amical',group:null,tv:null,stade:'Estádio do Maracanã',ville:'Rio de Janeiro, Brésil',mapQuery:'Maracana+Stadium+Rio+de+Janeiro',tzLocal:'America/Sao_Paulo',tzCity:'Rio de Janeiro',filter:['br']},
-  {id:'es-ami-1',flags:['🇪🇸','🇵🇪'],names:['Espagne','Pérou'],date:new Date('2026-06-09T02:00:00Z'),type:'amical',group:null,tv:null,stade:'Rose Bowl',ville:'Pasadena, Los Angeles',mapQuery:'Rose+Bowl+Stadium+Pasadena+CA',tzLocal:'America/Los_Angeles',tzCity:'Los Angeles',filter:['es']},
-  {id:'pt-ami-2',flags:['🇵🇹','🇳🇬'],names:['Portugal','Nigeria'],date:new Date('2026-06-10T19:45:00Z'),type:'amical',group:null,tv:null,stade:'Estádio da Luz',ville:'Lisbonne, Portugal',mapQuery:'Estadio+da+Luz+Lisbon',tzLocal:'Europe/Lisbon',tzCity:'Lisbonne',filter:['pt']},
-  {id:'br-1',flags:['🇧🇷','🇲🇦'],names:['Brésil','Maroc'],date:new Date('2026-06-13T22:00:00Z'),type:'cdm',group:'Groupe C',tv:'beIN Sports 1',stade:'MetLife Stadium',ville:'East Rutherford, NJ',mapQuery:'MetLife+Stadium+East+Rutherford+NJ',tzLocal:'America/New_York',tzCity:'New York',filter:['br']},
-  {id:'es-1',flags:['🇪🇸','🇨🇻'],names:['Espagne','Cap-Vert'],date:new Date('2026-06-15T16:00:00Z'),type:'cdm',group:'Groupe H',tv:'M6 + beIN Sports 1',stade:'Mercedes-Benz Stadium',ville:'Atlanta, Georgia',mapQuery:'Mercedes-Benz+Stadium+Atlanta+GA',tzLocal:'America/New_York',tzCity:'Atlanta',filter:['es']},
-  {id:'fr-1',flags:['🇫🇷','🇸🇳'],names:['France','Sénégal'],date:new Date('2026-06-16T19:00:00Z'),type:'cdm',group:'Groupe I',tv:'M6 + beIN Sports 1',stade:'MetLife Stadium',ville:'East Rutherford, NJ',mapQuery:'MetLife+Stadium+East+Rutherford+NJ',tzLocal:'America/New_York',tzCity:'New York',filter:['fr']},
-  {id:'pt-1',flags:['🇵🇹','🇨🇩'],names:['Portugal','RD Congo'],date:new Date('2026-06-17T17:00:00Z'),type:'cdm',group:'Groupe K',tv:'M6 + beIN Sports 1',stade:'NRG Stadium',ville:'Houston, Texas',mapQuery:'NRG+Stadium+Houston+TX',tzLocal:'America/Chicago',tzCity:'Houston',filter:['pt']},
-  {id:'br-2',flags:['🇧🇷','🇭🇹'],names:['Brésil','Haïti'],date:new Date('2026-06-20T01:00:00Z'),type:'cdm',group:'Groupe C',tv:'beIN Sports 1',stade:'Lincoln Financial Field',ville:'Philadelphie, PA',mapQuery:'Lincoln+Financial+Field+Philadelphia+PA',tzLocal:'America/New_York',tzCity:'Philadelphie',filter:['br']},
-  {id:'es-2',flags:['🇪🇸','🇸🇦'],names:['Espagne','Arabie Saoudite'],date:new Date('2026-06-21T16:00:00Z'),type:'cdm',group:'Groupe H',tv:'M6 + beIN Sports 1',stade:'Mercedes-Benz Stadium',ville:'Atlanta, Georgia',mapQuery:'Mercedes-Benz+Stadium+Atlanta+GA',tzLocal:'America/New_York',tzCity:'Atlanta',filter:['es']},
-  {id:'fr-2',flags:['🇫🇷','🇮🇶'],names:['France','Irak'],date:new Date('2026-06-22T21:00:00Z'),type:'cdm',group:'Groupe I',tv:'M6 + beIN Sports 1',stade:'Lincoln Financial Field',ville:'Philadelphie, PA',mapQuery:'Lincoln+Financial+Field+Philadelphia+PA',tzLocal:'America/New_York',tzCity:'Philadelphie',filter:['fr']},
-  {id:'pt-2',flags:['🇵🇹','🇺🇿'],names:['Portugal','Ouzbékistan'],date:new Date('2026-06-23T17:00:00Z'),type:'cdm',group:'Groupe K',tv:'M6 + beIN Sports 1',stade:'Estadio Azteca',ville:'Mexico City, Mexique',mapQuery:'Estadio+Azteca+Mexico+City',tzLocal:'America/Mexico_City',tzCity:'Mexico City',filter:['pt']},
-  {id:'br-3',flags:['🇧🇷','🏴󠁧󠁢󠁳󠁣󠁴󠁿'],names:['Brésil','Écosse'],date:new Date('2026-06-24T22:00:00Z'),type:'cdm',group:'Groupe C',tv:'beIN Sports 1',stade:'Hard Rock Stadium',ville:'Miami, Florida',mapQuery:'Hard+Rock+Stadium+Miami+FL',tzLocal:'America/New_York',tzCity:'Miami',filter:['br']},
-  {id:'fr-3',flags:['🇫🇷','🇳🇴'],names:['France','Norvège'],date:new Date('2026-06-26T19:00:00Z'),type:'cdm',group:'Groupe I',tv:'M6 + beIN Sports 1',stade:'Gillette Stadium',ville:'Foxborough, MA',mapQuery:'Gillette+Stadium+Foxborough+MA',tzLocal:'America/New_York',tzCity:'Boston',filter:['fr']},
-  {id:'es-3',flags:['🇪🇸','🇺🇾'],names:['Espagne','Uruguay'],date:new Date('2026-06-27T00:00:00Z'),type:'cdm',group:'Groupe H',tv:'M6 + beIN Sports 1',stade:'Estadio Akron',ville:'Guadalajara, Mexique',mapQuery:'Estadio+Akron+Guadalajara+Mexico',tzLocal:'America/Mexico_City',tzCity:'Guadalajara',filter:['es']},
-  {id:'pt-3',flags:['🇵🇹','🇨🇴'],names:['Portugal','Colombie'],date:new Date('2026-06-27T23:30:00Z'),type:'cdm',group:'Groupe K',tv:'M6 + beIN Sports 1',stade:'Hard Rock Stadium',ville:'Miami, Florida',mapQuery:'Hard+Rock+Stadium+Miami+FL',tzLocal:'America/New_York',tzCity:'Miami',filter:['pt']},
+  {id:'pt-ami-1',lat:38.7517,lon:-9.1847,flags:['🇵🇹','🇨🇱'],names:['Portugal','Chili'],date:new Date('2026-06-06T17:45:00Z'),type:'amical',group:null,tv:null,stade:'Estádio José Alvalade',ville:'Lisbonne, Portugal',mapQuery:'Estadio+Jose+Alvalade+Lisbon',tzLocal:'Europe/Lisbon',tzCity:'Lisbonne',filter:['pt']},
+  {id:'br-ami-1',lat:-22.9121,lon:-43.2302,flags:['🇧🇷','🇪🇬'],names:['Brésil','Égypte'],date:new Date('2026-06-07T22:00:00Z'),type:'amical',group:null,tv:null,stade:'Estádio do Maracanã',ville:'Rio de Janeiro, Brésil',mapQuery:'Maracana+Stadium+Rio+de+Janeiro',tzLocal:'America/Sao_Paulo',tzCity:'Rio de Janeiro',filter:['br']},
+  {id:'es-ami-1',lat:34.1614,lon:-118.1676,flags:['🇪🇸','🇵🇪'],names:['Espagne','Pérou'],date:new Date('2026-06-09T02:00:00Z'),type:'amical',group:null,tv:null,stade:'Rose Bowl',ville:'Pasadena, Los Angeles',mapQuery:'Rose+Bowl+Stadium+Pasadena+CA',tzLocal:'America/Los_Angeles',tzCity:'Los Angeles',filter:['es']},
+  {id:'pt-ami-2',lat:38.7527,lon:-9.1849,flags:['🇵🇹','🇳🇬'],names:['Portugal','Nigeria'],date:new Date('2026-06-10T19:45:00Z'),type:'amical',group:null,tv:null,stade:'Estádio da Luz',ville:'Lisbonne, Portugal',mapQuery:'Estadio+da+Luz+Lisbon',tzLocal:'Europe/Lisbon',tzCity:'Lisbonne',filter:['pt']},
+  {id:'br-1',lat:40.8135,lon:-74.0745,flags:['🇧🇷','🇲🇦'],names:['Brésil','Maroc'],date:new Date('2026-06-13T22:00:00Z'),type:'cdm',group:'Groupe C',tv:'beIN Sports 1',stade:'MetLife Stadium',ville:'East Rutherford, NJ',mapQuery:'MetLife+Stadium+East+Rutherford+NJ',tzLocal:'America/New_York',tzCity:'New York',filter:['br']},
+  {id:'es-1',lat:33.7553,lon:-84.4006,flags:['🇪🇸','🇨🇻'],names:['Espagne','Cap-Vert'],date:new Date('2026-06-15T16:00:00Z'),type:'cdm',group:'Groupe H',tv:'M6 + beIN Sports 1',stade:'Mercedes-Benz Stadium',ville:'Atlanta, Georgia',mapQuery:'Mercedes-Benz+Stadium+Atlanta+GA',tzLocal:'America/New_York',tzCity:'Atlanta',filter:['es']},
+  {id:'fr-1',lat:40.8135,lon:-74.0745,flags:['🇫🇷','🇸🇳'],names:['France','Sénégal'],date:new Date('2026-06-16T19:00:00Z'),type:'cdm',group:'Groupe I',tv:'M6 + beIN Sports 1',stade:'MetLife Stadium',ville:'East Rutherford, NJ',mapQuery:'MetLife+Stadium+East+Rutherford+NJ',tzLocal:'America/New_York',tzCity:'New York',filter:['fr']},
+  {id:'pt-1',lat:29.6847,lon:-95.4107,flags:['🇵🇹','🇨🇩'],names:['Portugal','RD Congo'],date:new Date('2026-06-17T17:00:00Z'),type:'cdm',group:'Groupe K',tv:'M6 + beIN Sports 1',stade:'NRG Stadium',ville:'Houston, Texas',mapQuery:'NRG+Stadium+Houston+TX',tzLocal:'America/Chicago',tzCity:'Houston',filter:['pt']},
+  {id:'br-2',lat:39.9007,lon:-75.1675,flags:['🇧🇷','🇭🇹'],names:['Brésil','Haïti'],date:new Date('2026-06-20T01:00:00Z'),type:'cdm',group:'Groupe C',tv:'beIN Sports 1',stade:'Lincoln Financial Field',ville:'Philadelphie, PA',mapQuery:'Lincoln+Financial+Field+Philadelphia+PA',tzLocal:'America/New_York',tzCity:'Philadelphie',filter:['br']},
+  {id:'es-2',lat:33.7553,lon:-84.4006,flags:['🇪🇸','🇸🇦'],names:['Espagne','Arabie Saoudite'],date:new Date('2026-06-21T16:00:00Z'),type:'cdm',group:'Groupe H',tv:'M6 + beIN Sports 1',stade:'Mercedes-Benz Stadium',ville:'Atlanta, Georgia',mapQuery:'Mercedes-Benz+Stadium+Atlanta+GA',tzLocal:'America/New_York',tzCity:'Atlanta',filter:['es']},
+  {id:'fr-2',lat:39.9007,lon:-75.1675,flags:['🇫🇷','🇮🇶'],names:['France','Irak'],date:new Date('2026-06-22T21:00:00Z'),type:'cdm',group:'Groupe I',tv:'M6 + beIN Sports 1',stade:'Lincoln Financial Field',ville:'Philadelphie, PA',mapQuery:'Lincoln+Financial+Field+Philadelphia+PA',tzLocal:'America/New_York',tzCity:'Philadelphie',filter:['fr']},
+  {id:'pt-2',lat:19.3029,lon:-99.1505,flags:['🇵🇹','🇺🇿'],names:['Portugal','Ouzbékistan'],date:new Date('2026-06-23T17:00:00Z'),type:'cdm',group:'Groupe K',tv:'M6 + beIN Sports 1',stade:'Estadio Azteca',ville:'Mexico City, Mexique',mapQuery:'Estadio+Azteca+Mexico+City',tzLocal:'America/Mexico_City',tzCity:'Mexico City',filter:['pt']},
+  {id:'br-3',lat:25.958,lon:-80.2389,flags:['🇧🇷','🏴󠁧󠁢󠁳󠁣󠁴󠁿'],names:['Brésil','Écosse'],date:new Date('2026-06-24T22:00:00Z'),type:'cdm',group:'Groupe C',tv:'beIN Sports 1',stade:'Hard Rock Stadium',ville:'Miami, Florida',mapQuery:'Hard+Rock+Stadium+Miami+FL',tzLocal:'America/New_York',tzCity:'Miami',filter:['br']},
+  {id:'fr-3',lat:42.0909,lon:-71.2643,flags:['🇫🇷','🇳🇴'],names:['France','Norvège'],date:new Date('2026-06-26T19:00:00Z'),type:'cdm',group:'Groupe I',tv:'M6 + beIN Sports 1',stade:'Gillette Stadium',ville:'Foxborough, MA',mapQuery:'Gillette+Stadium+Foxborough+MA',tzLocal:'America/New_York',tzCity:'Boston',filter:['fr']},
+  {id:'es-3',lat:20.6863,lon:-103.4671,flags:['🇪🇸','🇺🇾'],names:['Espagne','Uruguay'],date:new Date('2026-06-27T00:00:00Z'),type:'cdm',group:'Groupe H',tv:'M6 + beIN Sports 1',stade:'Estadio Akron',ville:'Guadalajara, Mexique',mapQuery:'Estadio+Akron+Guadalajara+Mexico',tzLocal:'America/Mexico_City',tzCity:'Guadalajara',filter:['es']},
+  {id:'pt-3',lat:25.958,lon:-80.2389,flags:['🇵🇹','🇨🇴'],names:['Portugal','Colombie'],date:new Date('2026-06-27T23:30:00Z'),type:'cdm',group:'Groupe K',tv:'M6 + beIN Sports 1',stade:'Hard Rock Stadium',ville:'Miami, Florida',mapQuery:'Hard+Rock+Stadium+Miami+FL',tzLocal:'America/New_York',tzCity:'Miami',filter:['pt']},
 ];
 
 const DUR = 115*60000;
@@ -270,6 +272,37 @@ const maps = q => isIOS?`maps://?q=${q}`:`https://maps.apple.com/?q=${q}`;
 // Score API
 const TLA = {'France':'FRA','Portugal':'POR','Brésil':'BRA','Espagne':'ESP','Sénégal':'SEN','Irak':'IRQ','Norvège':'NOR','RD Congo':'COD','Ouzbékistan':'UZB','Colombie':'COL','Maroc':'MAR','Haïti':'HAI','Écosse':'SCO','Cap-Vert':'CPV','Arabie Saoudite':'KSA','Uruguay':'URY'};
 const cache = {};
+const weatherCache = {};
+
+const WX_CODE = {
+  0:'☀️',1:'🌤',2:'⛅',3:'☁️',
+  45:'🌫',48:'🌫',
+  51:'🌦',53:'🌦',55:'🌧',
+  61:'🌧',63:'🌧',65:'🌧',
+  71:'🌨',73:'🌨',75:'🌨',
+  80:'🌦',81:'🌧',82:'⛈',
+  95:'⛈',96:'⛈',99:'⛈'
+};
+
+async function fetchWeather(m) {
+  if(!m.lat || !m.lon) return null;
+  const key = m.id;
+  if(weatherCache[key] && Date.now()-weatherCache[key].ts < 600000) return weatherCache[key].data;
+  try {
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${m.lat}&longitude=${m.lon}&current=temperature_2m,weathercode,windspeed_10m&wind_speed_unit=kmh&timezone=auto`;
+    const r = await fetch(url);
+    if(!r.ok) throw 0;
+    const j = await r.json();
+    const c = j.current;
+    const data = {
+      temp: Math.round(c.temperature_2m),
+      icon: WX_CODE[c.weathercode] || '🌡',
+      wind: Math.round(c.windspeed_10m)
+    };
+    weatherCache[key] = {ts:Date.now(), data};
+    return data;
+  } catch(e) { return null; }
+}
 let liveIv = null;
 
 async function fetchScore(m) {
@@ -456,9 +489,16 @@ function makeCard(m, isPlayed) {
         <span class="card-vs">vs</span>
         <div class="card-team"><span class="card-flag">${m.flags[1]}</span><span class="card-name">${m.names[1]}</span></div>
       </div>
-      <div class="card-meta">${badge}${liveBadge}<span class="card-city-tag">${m.tzCity}</span></div>
+      <div class="card-meta">${badge}${liveBadge}<span class="card-city-tag">${m.tzCity}</span><span class="card-weather" id="wx-${m.id}"></span></div>
     </div>
     ${rightEl}`;
+
+  // Charger météo en arrière-plan
+  fetchWeather(m).then(wx => {
+    const el = document.getElementById('wx-'+m.id);
+    if(!el || !wx) return;
+    el.innerHTML = `${wx.icon} <span class="card-weather-temp">${wx.temp}°C</span>`;
+  });
 
   if(isPlayed) {
     fetchScore(m).then(data => {
