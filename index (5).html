@@ -274,31 +274,50 @@ async function fetchScore(m) {
   try {
     const st = getSt(m);
     const ds = m.date.toISOString().split('T')[0];
-    // Live : endpoint livescore, sinon matchs par date
     const url = st==='live'
       ? `/.netlify/functions/score?live=1`
       : `/.netlify/functions/score?matchDate=${ds}`;
     const r = await fetch(url);
     if(!r.ok) throw 0;
     const j = await r.json();
-    // Chercher le match dans la réponse
-    // L'API retourne j.response ou j.matches selon l'endpoint
-    const list = j.response || j.matches || j.events || [];
-    const t1=m.names[0].toLowerCase(), t2=m.names[1].toLowerCase();
+
+    // Structure API: j.response.matches[] ou j.response.live[]
+    const list = (j.response?.matches || j.response?.live || []);
+    const t1 = m.names[0].toLowerCase();
+    const t2 = m.names[1].toLowerCase();
+
+    // Map noms FR -> EN pour matcher l'API
+    const nameMap = {
+      'france':'france','portugal':'portugal','brésil':'brazil','espagne':'spain',
+      'sénégal':'senegal','irak':'iraq','norvège':'norway','rd congo':'dr congo',
+      'ouzbékistan':'uzbekistan','colombie':'colombia','maroc':'morocco',
+      'haïti':'haiti','écosse':'scotland','cap-vert':'cape verde',
+      'arabie saoudite':'saudi arabia','uruguay':'uruguay'
+    };
+    const en1 = nameMap[t1] || t1;
+    const en2 = nameMap[t2] || t2;
     const found = list.find(x => {
-      const h = (x.teams?.home?.name||x.homeTeam?.name||x.strHomeTeam||'').toLowerCase();
-      const a = (x.teams?.away?.name||x.awayTeam?.name||x.strAwayTeam||'').toLowerCase();
-      return (h.includes(t1)||t1.includes(h)) && (a.includes(t2)||t2.includes(a))
-          || (h.includes(t2)||t2.includes(h)) && (a.includes(t1)||t1.includes(a));
+      const h = (x.home?.name || '').toLowerCase();
+      const a = (x.away?.name || '').toLowerCase();
+      const matchFwd = (h.includes(en1)||en1.includes(h)) && (a.includes(en2)||en2.includes(a));
+      const matchRev = (h.includes(en2)||en2.includes(h)) && (a.includes(en1)||en1.includes(a));
+      return matchFwd || matchRev;
     });
+
     let d = null;
     if(found) {
-      const hs = found.goals?.home ?? found.score?.fullTime?.home ?? found.intHomeScore ?? null;
-      const as_ = found.goals?.away ?? found.score?.fullTime?.away ?? found.intAwayScore ?? null;
-      const status = found.fixture?.status?.short || found.status || found.strStatus || '';
-      const live = ['1H','2H','HT','ET','P','LIVE','IN PLAY'].some(s=>status.toUpperCase().includes(s));
-      const done = ['FT','AET','PEN','FINISHED','Match Finished'].some(s=>status.toUpperCase().includes(s.toUpperCase()));
-      d = { home:hs, away:as_, status: live?'IN_PLAY': done?'FINISHED':'SCHEDULED', minute: found.fixture?.status?.elapsed||found.elapsed||null };
+      const hs = found.home?.score ?? null;
+      const as_ = found.away?.score ?? null;
+      const statusShort = found.status?.reason?.short || '';
+      const finished = found.status?.finished === true;
+      const started = found.status?.started === true;
+      const live = started && !finished;
+      d = {
+        home: hs,
+        away: as_,
+        status: live ? 'IN_PLAY' : finished ? 'FINISHED' : 'SCHEDULED',
+        minute: null
+      };
     }
     cache[m.id]={ts:Date.now(),data:d};
     return d;
