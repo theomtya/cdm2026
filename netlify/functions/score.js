@@ -15,9 +15,15 @@ exports.handler = async (event) => {
     if (live === '1') {
       url = 'https://free-api-live-football-data.p.rapidapi.com/football-current-live';
     } else if (matchDate) {
-      url = `https://free-api-live-football-data.p.rapidapi.com/football-get-matches-by-date?date=${matchDate}`;
+      // Format requis : YYYYMMDD (sans tirets)
+      const dateFormatted = matchDate.replace(/-/g, '');
+      url = `https://free-api-live-football-data.p.rapidapi.com/football-get-matches-by-date?date=${dateFormatted}`;
     } else {
-      return { statusCode: 400, headers: { 'Access-Control-Allow-Origin': '*' }, body: JSON.stringify({ error: 'params manquants' }) };
+      return {
+        statusCode: 400,
+        headers: { 'Access-Control-Allow-Origin': '*' },
+        body: JSON.stringify({ error: 'params manquants' })
+      };
     }
 
     const res = await fetch(url, { headers });
@@ -25,10 +31,18 @@ exports.handler = async (event) => {
 
     return {
       statusCode: 200,
-      headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' },
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Content-Type': 'application/json',
+        'Cache-Control': live === '1' ? 'no-cache' : 'public, max-age=60',
+      },
       body: JSON.stringify(data)
     };
   } catch (err) {
-    return { statusCode: 500, headers: { 'Access-Control-Allow-Origin': '*' }, body: JSON.stringify({ error: err.message }) };
+    return {
+      statusCode: 500,
+      headers: { 'Access-Control-Allow-Origin': '*' },
+      body: JSON.stringify({ error: err.message })
+    };
   }
 };
