@@ -273,7 +273,8 @@ async function fetchScore(m) {
   if(cache[m.id]&&Date.now()-cache[m.id].ts<60000) return cache[m.id].data;
   try {
     const st = getSt(m);
-    const ds = m.date.toISOString().split('T')[0];
+    // Utiliser la date heure de Paris pour l'appel API
+    const ds = m.date.toLocaleDateString('fr-FR', {timeZone:'Europe/Paris', year:'numeric', month:'2-digit', day:'2-digit'}).split('/').reverse().join('-');
     const url = st==='live'
       ? `/api/score?live=1`
       : `/api/score?matchDate=${ds}`;
