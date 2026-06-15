@@ -275,8 +275,8 @@ async function fetchScore(m) {
     const st = getSt(m);
     const ds = m.date.toISOString().split('T')[0];
     const url = st==='live'
-      ? `/.netlify/functions/score?live=1`
-      : `/.netlify/functions/score?matchDate=${ds}`;
+      ? `/api/score?live=1`
+      : `/api/score?matchDate=${ds}`;
     const r = await fetch(url);
     if(!r.ok) throw 0;
     const j = await r.json();
