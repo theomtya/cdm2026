@@ -27,6 +27,8 @@ nav{position:sticky;top:0;z-index:500;background:rgba(10,7,5,.96);backdrop-filte
 .nav-filters::-webkit-scrollbar{display:none;}
 .nav-filter{flex-shrink:0;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);color:var(--muted);font-family:inherit;font-size:12px;letter-spacing:1px;padding:7px 14px;border-radius:20px;cursor:pointer;transition:all .2s;white-space:nowrap;}
 .nav-filter.active{background:var(--red);border-color:var(--red);color:#fff;font-weight:600;}
+#btnPronos{background:linear-gradient(135deg,var(--red),var(--orange)) !important;border-color:transparent !important;color:#fff !important;font-weight:700 !important;box-shadow:0 2px 12px rgba(230,57,70,.35);animation:pronoGlow 2s infinite;}
+@keyframes pronoGlow{0%,100%{box-shadow:0 2px 12px rgba(230,57,70,.35);}50%{box-shadow:0 2px 20px rgba(244,131,31,.5);}}
 .nav-filter[data-filter="played"].active{background:var(--orange);border-color:var(--orange);}
 
 /* HERO */
@@ -161,8 +163,66 @@ h1 span{color:var(--red);}
     <button class="nav-filter" data-filter="pt">🇵🇹 Portugal</button>
     <button class="nav-filter" data-filter="br">🇧🇷 Brésil</button>
     <button class="nav-filter" data-filter="es">🇪🇸 Espagne</button>
+    <button class="nav-filter" data-filter="pronos" id="btnPronos" style="background:var(--red);border-color:var(--red);color:#fff;font-weight:700;letter-spacing:2px;">🎯 PRONOS</button>
   </div>
 </nav>
+
+<!-- PRONO OVERLAY -->
+<div id="pronoOverlay" style="display:none;position:fixed;inset:0;background:var(--dark);z-index:400;overflow-y:auto;">
+  <div style="max-width:480px;margin:0 auto;padding:16px;">
+
+    <!-- Login prono -->
+    <div id="pronoLogin" style="display:flex;flex-direction:column;align-items:center;text-align:center;padding:60px 20px;">
+      <div style="font-size:11px;letter-spacing:4px;text-transform:uppercase;color:var(--red);margin-bottom:12px;">⚽ CDM 2026</div>
+      <h2 style="font-size:clamp(32px,7vw,56px);font-weight:900;text-transform:uppercase;letter-spacing:-2px;line-height:1;margin-bottom:8px;">PRONOS<br><span style="color:var(--red)">ENTRE POTES</span></h2>
+      <p style="font-size:14px;font-style:italic;color:var(--muted);margin-bottom:32px;">Entre ton pseudo pour rejoindre</p>
+      <input type="text" id="pronoInput" placeholder="Ton pseudo..." maxlength="20" autocomplete="off"
+        style="width:100%;max-width:280px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:14px 18px;color:var(--cream);font-size:16px;font-family:inherit;outline:none;text-align:center;letter-spacing:2px;margin-bottom:10px;transition:border-color .2s;">
+      <button id="pronoLoginBtn" onclick="doPronoLogin()"
+        style="width:100%;max-width:280px;background:var(--red);color:white;border:none;padding:14px;font-size:12px;letter-spacing:3px;text-transform:uppercase;font-weight:700;border-radius:10px;cursor:pointer;font-family:inherit;">
+        Entrer →
+      </button>
+      <div id="pronoLoginErr" style="color:var(--red);font-size:11px;margin-top:8px;display:none;">Pseudo invalide</div>
+    </div>
+
+    <!-- App pronos -->
+    <div id="pronoApp" style="display:none;">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0 16px;">
+        <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);">Connecté : <span id="pronoNomAffiche" style="color:var(--orange);font-weight:700;"></span></div>
+        <button onclick="pronoLogout()" style="background:none;border:1px solid rgba(255,255,255,.1);color:var(--muted);font-size:10px;letter-spacing:2px;text-transform:uppercase;padding:5px 12px;border-radius:6px;cursor:pointer;font-family:inherit;">Quitter</button>
+      </div>
+
+      <!-- Stats bar -->
+      <div id="pronoStats" style="display:grid;grid-template-columns:repeat(4,1fr);gap:0;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:12px;margin-bottom:16px;overflow:hidden;">
+        <div style="padding:12px 8px;text-align:center;border-right:1px solid rgba(255,255,255,.05);">
+          <div id="ps1" style="font-size:20px;font-weight:900;color:var(--orange);">0</div>
+          <div style="font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);">Pronos</div>
+        </div>
+        <div style="padding:12px 8px;text-align:center;border-right:1px solid rgba(255,255,255,.05);">
+          <div id="ps2" style="font-size:20px;font-weight:900;color:var(--orange);">0</div>
+          <div style="font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);">Points</div>
+        </div>
+        <div style="padding:12px 8px;text-align:center;border-right:1px solid rgba(255,255,255,.05);">
+          <div id="ps3" style="font-size:20px;font-weight:900;color:var(--orange);">0</div>
+          <div style="font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);">Exacts</div>
+        </div>
+        <div style="padding:12px 8px;text-align:center;">
+          <div id="ps4" style="font-size:20px;font-weight:900;color:var(--orange);">0</div>
+          <div style="font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);">Victoires</div>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <div style="display:flex;gap:0;border-bottom:1px solid rgba(255,255,255,.06);margin-bottom:16px;">
+        <button class="ptab active" data-ptab="matchs" style="flex:1;padding:12px;font-size:11px;letter-spacing:2px;text-transform:uppercase;background:none;border:none;border-bottom:2px solid var(--red);color:var(--cream);cursor:pointer;font-family:inherit;">Mes pronos</button>
+        <button class="ptab" data-ptab="classement" style="flex:1;padding:12px;font-size:11px;letter-spacing:2px;text-transform:uppercase;background:none;border:none;border-bottom:2px solid transparent;color:var(--muted);cursor:pointer;font-family:inherit;">Classement</button>
+      </div>
+
+      <div id="ptab-matchs"></div>
+      <div id="ptab-classement" style="display:none;"></div>
+    </div>
+  </div>
+</div>
 
 <section id="hero">
   <span class="hero-eyebrow">🏆 USA · Canada · Mexique</span>
@@ -690,6 +750,265 @@ window.addEventListener('scroll',()=>{
   const p=window.scrollY/(document.documentElement.scrollHeight-window.innerHeight)||0;
   document.getElementById('scrollLine').style.width=(p*100)+'%';
 },{passive:true});
+
+// ─── PRONOS SUPABASE ─────────────────────────────────────────────
+const SB_URL = 'https://uoctvkqedzcsukmwjdpp.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvY3R2a3FlZHpjc3VrbXdqZHBwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk5OTM0ODcsImV4cCI6MjA2NTU2OTQ4N30.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvY3R2a3FlZHpjc3VrbXdqZHBwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk5OTM0ODcsImV4cCI6MjA2NTU2OTQ4N30';
+
+const SCORES_REELS = {
+  'fr-ami-1':{h:2,a:0},'fr-ami-2':{h:3,a:1},
+  'pt-ami-1':{h:1,a:0},'br-ami-1':{h:2,a:1},
+  'es-ami-1':{h:4,a:0},'pt-ami-2':{h:2,a:1},
+  'br-1':{h:1,a:1},
+};
+
+let pronoJoueur = null;
+let myPronos = {};
+
+async function sbGet(table, params=''){
+  const r = await fetch(`${SB_URL}/rest/v1/${table}?${params}`,{headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`}});
+  return r.json();
+}
+async function sbPost(table, body){
+  const r = await fetch(`${SB_URL}/rest/v1/${table}`,{method:'POST',headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Content-Type':'application/json','Prefer':'return=representation'},body:JSON.stringify(body)});
+  return r.json();
+}
+async function sbPatch(table, params, body){
+  const r = await fetch(`${SB_URL}/rest/v1/${table}?${params}`,{method:'PATCH',headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Content-Type':'application/json','Prefer':'return=representation'},body:JSON.stringify(body)});
+  return r.json();
+}
+
+function calcPts(prono, reel){
+  if(!reel||prono.score_home==null||prono.score_away==null) return null;
+  const ph=prono.score_home,pa=prono.score_away,rh=reel.h,ra=reel.a;
+  if(ph===rh&&pa===ra) return 3;
+  const pw=ph>pa?1:ph<pa?-1:0, rw=rh>ra?1:rh<ra?-1:0;
+  return pw===rw?1:0;
+}
+
+function showPronoToast(msg, ok=true){
+  let t = document.getElementById('pronoToast');
+  if(!t){
+    t = document.createElement('div');
+    t.id = 'pronoToast';
+    t.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:rgba(20,15,10,.95);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:12px 24px;font-size:12px;letter-spacing:1px;z-index:9999;transition:transform .3s;white-space:nowrap;font-family:Georgia,serif;';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.style.color = ok ? '#4caf50' : 'var(--red)';
+  t.style.borderColor = ok ? 'rgba(50,200,100,.3)' : 'rgba(230,57,70,.3)';
+  t.style.transform = 'translateX(-50%) translateY(0)';
+  setTimeout(()=>{ t.style.transform='translateX(-50%) translateY(80px)'; }, 2500);
+}
+
+// Ouvrir/fermer overlay pronos
+document.getElementById('btnPronos').addEventListener('click', ()=>{
+  const overlay = document.getElementById('pronoOverlay');
+  overlay.style.display = 'block';
+  document.body.style.overflow = 'hidden';
+  // Vérifier auto-login
+  const saved = localStorage.getItem('prono_joueur');
+  if(saved){ try{ pronoJoueur=JSON.parse(saved); initPronoApp(); }catch(e){} }
+});
+
+// Fermer overlay avec filtre all/played/etc
+document.querySelectorAll('.nav-filter:not(#btnPronos)').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.getElementById('pronoOverlay').style.display='none';
+    document.body.style.overflow='';
+  });
+});
+
+async function doPronoLogin(){
+  const pseudo = document.getElementById('pronoInput').value.trim();
+  if(!pseudo||pseudo.length<2){
+    document.getElementById('pronoLoginErr').style.display='block';
+    document.getElementById('pronoLoginErr').textContent='Pseudo trop court (min 2 car.)';
+    return;
+  }
+  document.getElementById('pronoLoginBtn').textContent='...';
+  const existing = await sbGet('joueurs',`pseudo=eq.${encodeURIComponent(pseudo)}&select=id,pseudo`);
+  if(existing&&existing.length>0){
+    pronoJoueur=existing[0];
+  } else {
+    const created = await sbPost('joueurs',{pseudo});
+    if(!created||created.error){ document.getElementById('pronoLoginErr').style.display='block'; document.getElementById('pronoLoginBtn').textContent='Entrer →'; return; }
+    pronoJoueur=Array.isArray(created)?created[0]:created;
+  }
+  localStorage.setItem('prono_joueur',JSON.stringify(pronoJoueur));
+  initPronoApp();
+}
+
+function pronoLogout(){
+  localStorage.removeItem('prono_joueur');
+  pronoJoueur=null; myPronos={};
+  document.getElementById('pronoApp').style.display='none';
+  document.getElementById('pronoLogin').style.display='flex';
+  document.getElementById('pronoInput').value='';
+  document.getElementById('pronoLoginBtn').textContent='Entrer →';
+}
+
+async function initPronoApp(){
+  document.getElementById('pronoLogin').style.display='none';
+  document.getElementById('pronoApp').style.display='block';
+  document.getElementById('pronoNomAffiche').textContent=pronoJoueur.pseudo;
+  const pronos = await sbGet('pronos',`joueur_id=eq.${pronoJoueur.id}&select=*`);
+  myPronos={};
+  if(pronos&&!pronos.error) pronos.forEach(p=>{ myPronos[p.match_id]=p; });
+  renderPronoMatchs();
+  updatePronoStats();
+}
+
+function updatePronoStats(){
+  let total=0,pts=0,exact=0,gagnant=0;
+  Object.values(myPronos).forEach(p=>{
+    total++;
+    const reel=SCORES_REELS[p.match_id];
+    const v=calcPts(p,reel);
+    if(v!==null){ pts+=v; if(v===3)exact++; if(v===1)gagnant++; }
+  });
+  document.getElementById('ps1').textContent=total;
+  document.getElementById('ps2').textContent=pts;
+  document.getElementById('ps3').textContent=exact;
+  document.getElementById('ps4').textContent=gagnant;
+}
+
+function renderPronoMatchs(){
+  const container = document.getElementById('ptab-matchs');
+  container.innerHTML='';
+  ALL.forEach(m=>{
+    const reel=SCORES_REELS[m.id]||null;
+    const myP=myPronos[m.id]||null;
+    const now=Date.now();
+    const isLocked=reel||(now>=m.date.getTime());
+    const pts=myP?calcPts(myP,reel):null;
+
+    const card=document.createElement('div');
+    card.style.cssText='background:rgba(20,15,10,.8);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:14px;margin-bottom:10px;';
+
+    // Header
+    const badgeColor = m.type==='cdm'?'rgba(230,57,70,.15)':'rgba(244,131,31,.1)';
+    const badgeTxt = m.type==='cdm'?m.group:'Amical';
+    const hour = m.date.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Paris'});
+
+    let scoreArea='';
+    if(reel){
+      const ptsBadge = pts===3?`<span style="background:rgba(255,215,0,.15);color:#FFD700;border:1px solid rgba(255,215,0,.3);padding:3px 10px;border-radius:6px;font-size:11px;font-weight:700;">🎯 +3pts</span>`:
+        pts===1?`<span style="background:rgba(244,131,31,.15);color:var(--orange);border:1px solid rgba(244,131,31,.3);padding:3px 10px;border-radius:6px;font-size:11px;font-weight:700;">✓ +1pt</span>`:
+        pts===0?`<span style="background:rgba(255,255,255,.05);color:var(--muted);padding:3px 10px;border-radius:6px;font-size:11px;">✗ 0pt</span>`:'';
+      scoreArea=`
+        <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin:10px 0;">
+          <span style="font-size:32px;font-weight:900;">${reel.h}</span>
+          <span style="color:var(--muted);font-size:14px;">—</span>
+          <span style="font-size:32px;font-weight:900;">${reel.a}</span>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding-top:8px;border-top:1px solid rgba(255,255,255,.05);">
+          <span style="font-size:11px;color:var(--muted);">Mon prono : <span style="color:var(--cream);font-weight:700;">${myP?`${myP.score_home}—${myP.score_away}`:'—'}</span></span>
+          ${ptsBadge}
+        </div>`;
+    } else if(!isLocked){
+      const vh=myP!=null?myP.score_home:'', va=myP!=null?myP.score_away:'';
+      scoreArea=`
+        <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin:10px 0;">
+          <input type="number" id="ph-${m.id}" value="${vh}" min="0" max="20" placeholder="0"
+            style="width:50px;height:50px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:10px;color:var(--cream);font-size:20px;font-weight:900;text-align:center;font-family:inherit;outline:none;-moz-appearance:textfield;">
+          <span style="font-size:18px;color:var(--muted);font-weight:900;">—</span>
+          <input type="number" id="pa-${m.id}" value="${va}" min="0" max="20" placeholder="0"
+            style="width:50px;height:50px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:10px;color:var(--cream);font-size:20px;font-weight:900;text-align:center;font-family:inherit;outline:none;-moz-appearance:textfield;">
+        </div>
+        <button id="pbtn-${m.id}" onclick="saveProno('${m.id}')"
+          style="width:100%;background:${myP?'rgba(50,200,100,.1)':'rgba(230,57,70,.12)'};border:1px solid ${myP?'rgba(50,200,100,.3)':'rgba(230,57,70,.25)'};color:${myP?'#4caf50':'var(--red)'};font-size:10px;letter-spacing:3px;text-transform:uppercase;padding:9px;border-radius:8px;cursor:pointer;font-family:inherit;">
+          ${myP?'✓ Prono enregistré':'Valider →'}
+        </button>`;
+    } else {
+      scoreArea=`<div style="text-align:center;padding:8px 0;font-size:12px;font-style:italic;color:var(--muted);">${myP?`Mon prono : ${myP.score_home}—${myP.score_away}`:'Pas de prono'}</div>`;
+    }
+
+    card.innerHTML=`
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <span style="background:${badgeColor};color:${m.type==='cdm'?'var(--red)':'var(--orange)'};font-size:9px;letter-spacing:2px;text-transform:uppercase;padding:3px 8px;border-radius:4px;">${badgeTxt}</span>
+        <span style="font-size:11px;color:var(--muted);">${hour}</span>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-around;margin-bottom:4px;">
+        <div style="text-align:center;"><div style="font-size:26px;">${m.flags[0]}</div><div style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;">${m.names[0]}</div></div>
+        <span style="font-size:10px;color:var(--muted);letter-spacing:2px;">vs</span>
+        <div style="text-align:center;"><div style="font-size:26px;">${m.flags[1]}</div><div style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;">${m.names[1]}</div></div>
+      </div>
+      ${scoreArea}`;
+    container.appendChild(card);
+  });
+}
+
+async function saveProno(matchId){
+  const h=parseInt(document.getElementById(`ph-${matchId}`)?.value);
+  const a=parseInt(document.getElementById(`pa-${matchId}`)?.value);
+  const btn=document.getElementById(`pbtn-${matchId}`);
+  if(isNaN(h)||isNaN(a)||h<0||a<0){showPronoToast('Score invalide !',false);return;}
+  if(btn){btn.textContent='...';btn.disabled=true;}
+  const existing=myPronos[matchId];
+  let result;
+  if(existing) result=await sbPatch('pronos',`id=eq.${existing.id}`,{score_home:h,score_away:a});
+  else result=await sbPost('pronos',{joueur_id:pronoJoueur.id,match_id:matchId,score_home:h,score_away:a,points:0});
+  if(result&&!result.error){
+    myPronos[matchId]=Array.isArray(result)?result[0]:result;
+    if(btn){btn.textContent='✓ Enregistré';btn.style.color='#4caf50';btn.style.borderColor='rgba(50,200,100,.3)';}
+    showPronoToast('Prono enregistré !');
+    updatePronoStats();
+  } else {
+    if(btn){btn.textContent='Erreur';btn.disabled=false;}
+    showPronoToast('Erreur !',false);
+  }
+}
+
+async function renderPronoClassement(){
+  const container=document.getElementById('ptab-classement');
+  container.innerHTML='<div style="text-align:center;padding:40px;color:var(--muted);font-style:italic;">Chargement...</div>';
+  const [joueurs,pronos]=await Promise.all([sbGet('joueurs','select=id,pseudo'),sbGet('pronos','select=*')]);
+  if(!joueurs||joueurs.error){container.innerHTML='<div style="text-align:center;padding:40px;color:var(--muted);">Erreur</div>';return;}
+  const scores={};
+  joueurs.forEach(j=>{ scores[j.id]={pseudo:j.pseudo,pts:0,total:0,exact:0,gagnant:0}; });
+  (pronos||[]).forEach(p=>{
+    if(!scores[p.joueur_id])return;
+    const reel=SCORES_REELS[p.match_id];
+    const v=calcPts(p,reel);
+    scores[p.joueur_id].total++;
+    if(v!==null){scores[p.joueur_id].pts+=v;if(v===3)scores[p.joueur_id].exact++;if(v===1)scores[p.joueur_id].gagnant++;}
+  });
+  const sorted=Object.entries(scores).map(([id,s])=>({id:parseInt(id),...s})).sort((a,b)=>b.pts-a.pts||b.exact-a.exact);
+  if(!sorted.length){container.innerHTML='<div style="text-align:center;padding:40px;color:var(--muted);font-style:italic;">Personne n\'a encore voté 👀</div>';return;}
+  const medals=['🥇','🥈','🥉'];
+  container.innerHTML='';
+  sorted.forEach((s,i)=>{
+    const isMe=s.id===pronoJoueur.id;
+    const item=document.createElement('div');
+    item.style.cssText=`display:flex;align-items:center;gap:12px;padding:12px 14px;background:rgba(20,15,10,.8);border:1px solid ${isMe?'rgba(244,131,31,.4)':i===0?'rgba(255,215,0,.25)':'rgba(255,255,255,.06)'};border-radius:12px;margin-bottom:8px;`;
+    item.innerHTML=`
+      <span style="font-size:${i<3?'20':'16'}px;width:28px;text-align:center;color:${i===0?'#FFD700':i===1?'#C0C0C0':i===2?'#CD7F32':'var(--muted)'};">${i<3?medals[i]:i+1}</span>
+      <div style="flex:1;">
+        <div style="font-size:14px;font-weight:700;letter-spacing:1px;">${s.pseudo}${isMe?' <span style="color:var(--orange);font-size:10px;">(toi)</span>':''}</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:2px;">${s.total} pronos · ${s.exact} exacts · ${s.gagnant} victoires</div>
+      </div>
+      <div style="text-align:right;"><div style="font-size:22px;font-weight:900;color:var(--orange);">${s.pts}</div><div style="font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);">pts</div></div>`;
+    container.appendChild(item);
+  });
+}
+
+// Tabs pronos
+document.querySelectorAll('.ptab').forEach(t=>{
+  t.addEventListener('click',()=>{
+    document.querySelectorAll('.ptab').forEach(x=>{x.style.borderBottomColor='transparent';x.style.color='var(--muted)';x.classList.remove('active');});
+    t.style.borderBottomColor='var(--red)';t.style.color='var(--cream)';t.classList.add('active');
+    const tab=t.dataset.ptab;
+    document.getElementById('ptab-matchs').style.display=tab==='matchs'?'block':'none';
+    document.getElementById('ptab-classement').style.display=tab==='classement'?'block':'none';
+    if(tab==='classement')renderPronoClassement();
+  });
+});
+
+// Supprimer webkit spinner sur inputs number dans l'overlay
+const style=document.createElement('style');
+style.textContent='input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;}';
+document.head.appendChild(style);
 </script>
 </body>
 </html>
