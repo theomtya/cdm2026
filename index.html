@@ -308,6 +308,8 @@ h1 span{color:var(--red);}
 
 <script>
 const ALL = [
+  {id:'fr-ami-1',lat:48.9244,lon:2.3601,flags:['🇫🇷','🇨🇮'],names:['France','Côte d\'Ivoire'],date:new Date('2026-06-04T19:00:00Z'),type:'amical',group:null,tv:null,stade:'Stade de France',ville:'Saint-Denis, France',mapQuery:'Stade+de+France+Saint+Denis',tzLocal:'Europe/Paris',tzCity:'Paris',filter:['fr']},
+  {id:'fr-ami-2',lat:48.9244,lon:2.3601,flags:['🇫🇷','🏴󠁧󠁢󠁮󠁩󠁲󠁿'],names:['France','Irlande du Nord'],date:new Date('2026-06-08T19:00:00Z'),type:'amical',group:null,tv:null,stade:'Stade de France',ville:'Saint-Denis, France',mapQuery:'Stade+de+France+Saint+Denis',tzLocal:'Europe/Paris',tzCity:'Paris',filter:['fr']},
   {id:'pt-ami-1',lat:38.7517,lon:-9.1847,flags:['🇵🇹','🇨🇱'],names:['Portugal','Chili'],date:new Date('2026-06-06T17:45:00Z'),type:'amical',group:null,tv:null,stade:'Estádio José Alvalade',ville:'Lisbonne, Portugal',mapQuery:'Estadio+Jose+Alvalade+Lisbon',tzLocal:'Europe/Lisbon',tzCity:'Lisbonne',filter:['pt']},
   {id:'br-ami-1',lat:-22.9121,lon:-43.2302,flags:['🇧🇷','🇪🇬'],names:['Brésil','Égypte'],date:new Date('2026-06-07T22:00:00Z'),type:'amical',group:null,tv:null,stade:'Estádio do Maracanã',ville:'Rio de Janeiro, Brésil',mapQuery:'Maracana+Stadium+Rio+de+Janeiro',tzLocal:'America/Sao_Paulo',tzCity:'Rio de Janeiro',filter:['br']},
   {id:'es-ami-1',lat:34.1614,lon:-118.1676,flags:['🇪🇸','🇵🇪'],names:['Espagne','Pérou'],date:new Date('2026-06-09T02:00:00Z'),type:'amical',group:null,tv:null,stade:'Rose Bowl',ville:'Pasadena, Los Angeles',mapQuery:'Rose+Bowl+Stadium+Pasadena+CA',tzLocal:'America/Los_Angeles',tzCity:'Los Angeles',filter:['es']},
@@ -773,12 +775,24 @@ let pronoJoueur = null;
 let myPronos = {};
 
 async function sbGet(table, params=''){
-  const r = await fetch(`${SB_URL}/rest/v1/${table}?${params}`,{headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`}});
-  return r.json();
+  try {
+    const r = await fetch(`${SB_URL}/rest/v1/${table}?${params}`,{
+      headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Content-Type':'application/json','Accept':'application/json'}
+    });
+    if(!r.ok){ console.error('sbGet error', r.status, await r.text()); return []; }
+    return r.json();
+  } catch(e){ console.error('sbGet catch', e); return []; }
 }
 async function sbPost(table, body){
-  const r = await fetch(`${SB_URL}/rest/v1/${table}`,{method:'POST',headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Content-Type':'application/json','Prefer':'return=representation'},body:JSON.stringify(body)});
-  return r.json();
+  try {
+    const r = await fetch(`${SB_URL}/rest/v1/${table}`,{
+      method:'POST',
+      headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Content-Type':'application/json','Prefer':'return=representation','Accept':'application/json'}
+      ,body:JSON.stringify(body)
+    });
+    const txt = await r.text();
+    try { return JSON.parse(txt); } catch(e){ console.error('sbPost parse err', txt); return {error: txt}; }
+  } catch(e){ console.error('sbPost catch', e); return {error: e.message}; }
 }
 async function sbPatch(table, params, body){
   const r = await fetch(`${SB_URL}/rest/v1/${table}?${params}`,{method:'PATCH',headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Content-Type':'application/json','Prefer':'return=representation'},body:JSON.stringify(body)});
@@ -839,17 +853,38 @@ async function doPronoLogin(){
     document.getElementById('pronoLoginErr').textContent='Pseudo trop court (min 2 car.)';
     return;
   }
-  document.getElementById('pronoLoginBtn').textContent='...';
-  const existing = await sbGet('joueurs',`pseudo=eq.${encodeURIComponent(pseudo)}&select=id,pseudo`);
-  if(existing&&existing.length>0){
-    pronoJoueur=existing[0];
-  } else {
-    const created = await sbPost('joueurs',{pseudo});
-    if(!created||created.error){ document.getElementById('pronoLoginErr').style.display='block'; document.getElementById('pronoLoginBtn').textContent='Entrer →'; return; }
-    pronoJoueur=Array.isArray(created)?created[0]:created;
+  const errEl = document.getElementById('pronoLoginErr');
+  const btnEl = document.getElementById('pronoLoginBtn');
+  btnEl.textContent='⏳ Connexion...';
+  btnEl.disabled=true;
+  errEl.style.display='none';
+  
+  try {
+    const existing = await sbGet('joueurs',`pseudo=eq.${encodeURIComponent(pseudo)}&select=id,pseudo`);
+    console.log('existing:', existing);
+    
+    if(existing && Array.isArray(existing) && existing.length>0){
+      pronoJoueur=existing[0];
+    } else {
+      const created = await sbPost('joueurs',{pseudo});
+      console.log('created:', created);
+      if(!created || created.error || (Array.isArray(created) && created.length===0)){
+        errEl.style.display='block';
+        errEl.textContent='Erreur Supabase — vérifie les policies RLS';
+        btnEl.textContent='Entrer →'; btnEl.disabled=false;
+        return;
+      }
+      pronoJoueur=Array.isArray(created)?created[0]:created;
+    }
+    
+    localStorage.setItem('prono_joueur',JSON.stringify(pronoJoueur));
+    initPronoApp();
+  } catch(e) {
+    console.error('Login error:', e);
+    errEl.style.display='block';
+    errEl.textContent='Erreur réseau : '+e.message;
+    btnEl.textContent='Entrer →'; btnEl.disabled=false;
   }
-  localStorage.setItem('prono_joueur',JSON.stringify(pronoJoueur));
-  initPronoApp();
 }
 
 function pronoLogout(){
