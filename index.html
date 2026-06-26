@@ -121,6 +121,28 @@ h1 span{color:var(--red);}
 .ko-mid{height:1px;background:rgba(255,255,255,.05);margin:2px 0;}
 .ko-foot{font-size:9px;color:var(--muted);margin-top:7px;letter-spacing:.5px;display:flex;justify-content:space-between;}
 
+/* BRACKET ARBORESCENT */
+.bk-hint{text-align:center;font-size:9px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin:10px 0 4px;}
+.bracket{display:flex;overflow-x:auto;padding:6px 12px 18px;gap:18px;scrollbar-width:thin;align-items:stretch;}
+.bracket::-webkit-scrollbar{height:6px;}
+.bracket::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:3px;}
+.bk-col{display:flex;flex-direction:column;min-width:152px;flex-shrink:0;}
+.bk-col-t{font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--red);text-align:center;margin-bottom:8px;font-weight:700;}
+.bk-col-in{display:flex;flex-direction:column;justify-content:space-around;flex:1;gap:8px;}
+.bk-card{position:relative;background:var(--card);border:1px solid rgba(255,255,255,.07);border-radius:9px;padding:6px 8px;cursor:pointer;transition:border-color .2s;}
+.bk-card:active{border-color:var(--orange);}
+.bk-card.live{border-color:var(--red);background:rgba(230,57,70,.06);}
+.bk-col:not(:last-child) .bk-card::after{content:'';position:absolute;right:-18px;top:50%;width:18px;height:1px;background:rgba(255,255,255,.13);}
+.bk-side{display:flex;align-items:center;gap:6px;padding:3px 0;font-size:11px;}
+.bk-side.win{font-weight:800;color:var(--cream);}
+.bk-side.win b{color:var(--green);}
+.bk-side b{margin-left:auto;color:var(--orange);font-variant-numeric:tabular-nums;}
+.bk-nm{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-transform:uppercase;letter-spacing:-.2px;}
+.bk-nm.tbd{color:var(--muted);font-style:italic;text-transform:none;letter-spacing:0;font-size:10px;}
+.bk-mini{width:16px;height:auto;border-radius:2px;flex-shrink:0;}
+.bk-mini-ph{width:16px;height:11px;border-radius:2px;background:rgba(255,255,255,.08);flex-shrink:0;display:inline-block;}
+.bk-third{margin:0 12px;max-width:240px;}
+
 /* MODAL */
 .ov{position:fixed;inset:0;z-index:900;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s;}
 .ov.open{opacity:1;pointer-events:all;}
@@ -281,6 +303,7 @@ function normalize(g){
     homeScorers:parseScorers(g.home_scorers), awayScorers:parseScorers(g.away_scorers),
     group:g.group, matchday:g.matchday, type:(g.type||'group').toUpperCase(),
     isKo: (g.type||'group')!=='group',
+    homeLabel:g.home_team_label||'', awayLabel:g.away_team_label||'',
     status:statusOf(g),
     ts:d.ts, localHour:d.localHour, dd:d.dd, mm:d.mm, yy:d.yy
   };
@@ -374,21 +397,36 @@ function matchCardHTML(m){
     </div>
   </div>`;
 }
+function sectionHTML(title, arr){
+  if(!arr.length) return '';
+  let h=`<div class="date-sep"><div class="date-sep-line"></div><span>${title}</span><div class="date-sep-line"></div></div>`;
+  arr.forEach(m=>h+=matchCardHTML(m));
+  return h;
+}
 function renderMatchs(){
-  const list = GAMES.filter(matchFilter).sort((a,b)=>a.ts-b.ts);
+  const list = GAMES.filter(matchFilter);
   const box=$('view-matchs');
   if(!list.length){ box.innerHTML='<div class="empty">Aucun match pour ce filtre.</div>'; return; }
-  let html='', lastKey=null;
-  list.forEach(m=>{
-    const key=m.isKo?('ko-'+m.type):dateKey(m);
-    if(key!==lastKey){
-      lastKey=key;
-      const lab=m.isKo?(KO_LABEL[m.type]||m.group):dateLabel(m);
-      html+=`<div class="date-sep"><div class="date-sep-line"></div><span>${lab}</span><div class="date-sep-line"></div></div>`;
-    }
-    html+=matchCardHTML(m);
-  });
-  box.innerHTML=html;
+  const splitMode = (curFilter==='mine' || /^\d+$/.test(curFilter));
+  if(splitMode){
+    const live=list.filter(m=>m.status==='live').sort((a,b)=>a.ts-b.ts);
+    const up  =list.filter(m=>m.status==='upcoming').sort((a,b)=>a.ts-b.ts);
+    const pl  =list.filter(m=>m.status==='played').sort((a,b)=>b.ts-a.ts);
+    box.innerHTML = sectionHTML('🔴 En cours',live)+sectionHTML('⚡ À venir',up)+sectionHTML('✓ Terminés',pl);
+  } else {
+    const sorted=[...list].sort((a,b)=>a.ts-b.ts);
+    let html='', lastKey=null;
+    sorted.forEach(m=>{
+      const key=m.isKo?('ko-'+m.type):dateKey(m);
+      if(key!==lastKey){
+        lastKey=key;
+        const lab=m.isKo?(KO_LABEL[m.type]||m.group):dateLabel(m);
+        html+=`<div class="date-sep"><div class="date-sep-line"></div><span>${lab}</span><div class="date-sep-line"></div></div>`;
+      }
+      html+=matchCardHTML(m);
+    });
+    box.innerHTML=html;
+  }
   box.querySelectorAll('.mcard').forEach(c=>c.addEventListener('click',()=>openModal(c.dataset.id)));
 }
 
@@ -428,24 +466,43 @@ function renderElim(){
   const box=$('view-elim');
   const ko=GAMES.filter(m=>m.isKo);
   if(!ko.length){ box.innerHTML='<div class="empty">La phase à élimination directe s\'affichera dès que le calendrier des 16es sera publié.</div>'; return; }
-  let html='';
-  KO_ORDER.forEach(round=>{
-    const games=ko.filter(m=>m.type===round).sort((a,b)=>a.ts-b.ts);
-    if(!games.length) return;
-    html+=`<div class="ko-title">${KO_LABEL[round]||round}</div>`;
-    games.forEach(m=>{
-      const live=m.status==='live', played=m.status==='played';
-      const sc=(played||live);
-      html+=`<div class="ko-card ${live?'live':''}" data-id="${m.id}">
-        <div class="ko-side">${flagImg(m.homeFlag)}<span class="ko-nm ${m.homeId==='0'?'tbd':''}">${m.homeName}</span>${sc?`<span class="ko-sc">${m.hs}</span>`:''}</div>
-        <div class="ko-mid"></div>
-        <div class="ko-side">${flagImg(m.awayFlag)}<span class="ko-nm ${m.awayId==='0'?'tbd':''}">${m.awayName}</span>${sc?`<span class="ko-sc">${m.as}</span>`:''}</div>
-        <div class="ko-foot"><span>${m.dd?(m.dd+'/'+m.mm):''} ${m.localHour||''}</span><span>${live?'🔴 En cours':played?'Terminé':'À venir'}</span></div>
-      </div>`;
-    });
+  const byId={}; ko.forEach(m=>byId[m.id]=m);
+  // Reconstruire l'arbre depuis les labels "Match X"
+  const childMap={};
+  ko.forEach(m=>{
+    const ids=[];
+    [m.homeLabel,m.awayLabel].forEach(l=>{ const mm=l&&l.match(/Match (\d+)/i); if(mm&&byId[mm[1]]) ids.push(mm[1]); });
+    childMap[m.id]=ids;
   });
-  box.innerHTML=html;
-  box.querySelectorAll('.ko-card').forEach(c=>c.addEventListener('click',()=>openModal(c.dataset.id)));
+  const slot={}; let leaf=0;
+  function assign(id){
+    const ch=childMap[id]||[];
+    if(!ch.length){ if(slot[id]===undefined) slot[id]=leaf++; return slot[id]; }
+    const ps=ch.map(assign); slot[id]=ps.reduce((a,b)=>a+b,0)/ps.length; return slot[id];
+  }
+  if(byId['104']) assign('104');
+  ko.forEach(m=>{ if(slot[m.id]===undefined) slot[m.id]=leaf++; });
+
+  const rounds=['R32','R16','QF','SF','FINAL'];
+  let cols='';
+  rounds.forEach(r=>{
+    const games=ko.filter(m=>m.type===r).sort((a,b)=>slot[a.id]-slot[b.id]);
+    if(!games.length) return;
+    cols+=`<div class="bk-col"><div class="bk-col-t">${(KO_LABEL[r]||r).replace('🏆 ','')}</div><div class="bk-col-in">${games.map(bkCard).join('')}</div></div>`;
+  });
+  const third=ko.find(m=>m.type==='3RD');
+  const thirdHTML = third?`<div class="ko-title">🥉 Petite finale</div><div class="bk-third">${bkCard(third)}</div>`:'';
+  box.innerHTML=`<div class="bk-hint">← fais glisser pour parcourir le tableau →</div><div class="bracket">${cols}</div>${thirdHTML}`;
+  box.querySelectorAll('[data-id]').forEach(c=>c.addEventListener('click',()=>openModal(c.dataset.id)));
+}
+function miniFlag(url){ return url?`<img class="bk-mini" src="${url}" alt="" loading="lazy">`:`<span class="bk-mini-ph"></span>`; }
+function bkCard(m){
+  const sc=(m.status==='played'||m.status==='live');
+  const wh=sc&&(+m.hs>+m.as), wa=sc&&(+m.as>+m.hs);
+  return `<div class="bk-card ${m.status==='live'?'live':''}" data-id="${m.id}">
+    <div class="bk-side ${wh?'win':''}">${miniFlag(m.homeFlag)}<span class="bk-nm ${m.homeId==='0'?'tbd':''}">${m.homeName}</span>${sc?`<b>${m.hs}</b>`:''}</div>
+    <div class="bk-side ${wa?'win':''}">${miniFlag(m.awayFlag)}<span class="bk-nm ${m.awayId==='0'?'tbd':''}">${m.awayName}</span>${sc?`<b>${m.as}</b>`:''}</div>
+  </div>`;
 }
 
 /* ---------- MODAL ---------- */
