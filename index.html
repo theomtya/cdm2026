@@ -81,6 +81,8 @@ h1 span{color:var(--red);}
 .b-live .dot{width:5px;height:5px;border-radius:50%;background:#fff;animation:blink 1.1s infinite;}
 .b-ft{background:rgba(255,255,255,.06);color:var(--muted);}
 .mc-cd{font-size:9px;font-weight:700;color:var(--orange);background:rgba(244,131,31,.1);border:1px solid rgba(244,131,31,.2);border-radius:5px;padding:2px 6px;font-variant-numeric:tabular-nums;}
+.mc-wx{display:inline-flex;align-items:center;gap:3px;font-size:10px;color:var(--muted);}
+.mc-wx b{color:var(--cream);font-weight:600;}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
 @keyframes fadeUp{to{opacity:1;transform:translateY(0);}}
 
@@ -162,6 +164,13 @@ h1 span{color:var(--red);}
 .m-vs{font-size:13px;color:var(--muted);}
 .m-when{font-size:11px;color:var(--muted);margin-top:12px;font-style:italic;}
 .m-body{padding:16px;}
+.m-stade{background:rgba(244,131,31,.06);border:1px solid rgba(244,131,31,.18);border-radius:12px;padding:12px 14px;margin-bottom:14px;}
+.m-stade-top{display:flex;justify-content:space-between;align-items:center;gap:10px;}
+.ms-name{font-size:13px;font-weight:700;}
+.ms-city{font-size:11px;color:var(--muted);font-style:italic;margin-top:2px;}
+.ms-maps{background:rgba(52,199,89,.14);border:1px solid rgba(52,199,89,.25);color:var(--green);font-size:11px;letter-spacing:1px;text-transform:uppercase;padding:8px 12px;border-radius:9px;text-decoration:none;white-space:nowrap;flex-shrink:0;}
+.m-stade-sub{font-size:11px;color:var(--muted);margin-top:10px;}
+.m-stade-sub b{color:var(--cream);}
 .m-sec-t{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--red);margin-bottom:10px;}
 .scorers{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
 .sc-col{display:flex;flex-direction:column;gap:6px;}
@@ -250,6 +259,59 @@ const FR = {
 const KO_ORDER = ['R32','R16','QF','SF','3RD','FINAL'];
 const KO_LABEL = {R32:'16es de finale',R16:'8es de finale',QF:'Quarts de finale',SF:'Demi-finales','3RD':'Petite finale (3e place)',FINAL:'🏆 Finale'};
 
+// Stades : fuseau horaire réel + coordonnées (pour heure de Paris + météo)
+const STAD = {
+ '1':{n:'Estadio Azteca',c:'Mexico City',tz:'America/Mexico_City',lat:19.3029,lon:-99.1505},
+ '2':{n:'Estadio Akron',c:'Guadalajara',tz:'America/Mexico_City',lat:20.6817,lon:-103.4632},
+ '3':{n:'Estadio BBVA',c:'Monterrey',tz:'America/Monterrey',lat:25.6694,lon:-100.2444},
+ '4':{n:'AT&T Stadium',c:'Dallas',tz:'America/Chicago',lat:32.7473,lon:-97.0945},
+ '5':{n:'NRG Stadium',c:'Houston',tz:'America/Chicago',lat:29.6847,lon:-95.4107},
+ '6':{n:'Arrowhead Stadium',c:'Kansas City',tz:'America/Chicago',lat:39.0489,lon:-94.4839},
+ '7':{n:'Mercedes-Benz Stadium',c:'Atlanta',tz:'America/New_York',lat:33.7553,lon:-84.4006},
+ '8':{n:'Hard Rock Stadium',c:'Miami',tz:'America/New_York',lat:25.958,lon:-80.2389},
+ '9':{n:'Gillette Stadium',c:'Boston',tz:'America/New_York',lat:42.0909,lon:-71.2643},
+ '10':{n:'Lincoln Financial Field',c:'Philadelphie',tz:'America/New_York',lat:39.9007,lon:-75.1675},
+ '11':{n:'MetLife Stadium',c:'New York',tz:'America/New_York',lat:40.8135,lon:-74.0745},
+ '12':{n:'BMO Field',c:'Toronto',tz:'America/Toronto',lat:43.6332,lon:-79.4185},
+ '13':{n:'BC Place',c:'Vancouver',tz:'America/Vancouver',lat:49.2768,lon:-123.1119},
+ '14':{n:'Lumen Field',c:'Seattle',tz:'America/Los_Angeles',lat:47.5952,lon:-122.3316},
+ '15':{n:"Levi's Stadium",c:'San Francisco',tz:'America/Los_Angeles',lat:37.4030,lon:-121.9698},
+ '16':{n:'SoFi Stadium',c:'Los Angeles',tz:'America/Los_Angeles',lat:33.9535,lon:-118.3392}
+};
+// Convertit une heure murale d'un fuseau donné en timestamp UTC absolu
+function wallToUtc(y,mo,d,h,mi,tz){
+  const guess=Date.UTC(y,mo,d,h,mi);
+  const p={}; new Intl.DateTimeFormat('en-US',{timeZone:tz,hourCycle:'h23',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}).formatToParts(new Date(guess)).forEach(x=>p[x.type]=x.value);
+  const wall=Date.UTC(+p.year,+p.month-1,+p.day,+p.hour,+p.minute);
+  return guess-(wall-guess);
+}
+// Décompose un timestamp en heure de Paris
+function parisParts(ts){
+  if(!ts) return {day:'0',month:'0',year:'0',hour:'',minute:'',weekday:''};
+  const p={}; new Intl.DateTimeFormat('fr-FR',{timeZone:'Europe/Paris',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',weekday:'short',hourCycle:'h23'}).formatToParts(new Date(ts)).forEach(x=>p[x.type]=x.value);
+  return p;
+}
+// Météo (Open-Meteo, gratuit sans clé)
+const WX={0:'☀️',1:'🌤',2:'⛅',3:'☁️',45:'🌫',48:'🌫',51:'🌦',53:'🌦',55:'🌧',61:'🌧',63:'🌧',65:'🌧',71:'🌨',73:'🌨',75:'🌨',80:'🌦',81:'🌧',82:'⛈',95:'⛈',96:'⛈',99:'⛈'};
+const wxCache={};
+async function fetchWeather(lat,lon,key){
+  if(lat==null) return null;
+  if(wxCache[key]&&Date.now()-wxCache[key].t<6e5) return wxCache[key].d;
+  try{
+    const r=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&timezone=auto`);
+    if(!r.ok) return null; const j=await r.json();
+    const d={t:Math.round(j.current.temperature_2m),i:WX[j.current.weather_code]||'🌡'};
+    wxCache[key]={t:Date.now(),d}; return d;
+  }catch(e){ return null; }
+}
+function fillWeather(matches){
+  matches.forEach(m=>{
+    if(!m.stadium || m.status==='played') return;
+    const el=document.getElementById('wx-'+m.id); if(!el) return;
+    fetchWeather(m.stadium.lat,m.stadium.lon,m.stadiumId).then(w=>{ const e2=document.getElementById('wx-'+m.id); if(w&&e2) e2.innerHTML=`${w.i} <b>${w.t}°</b>`; });
+  });
+}
+
 let TEAMS = {};     // id -> {name, flag, code, group}
 let GAMES = [];     // matchs normalisés
 let GROUPS = [];    // classements bruts
@@ -272,14 +334,15 @@ function parseScorers(s){
   return inner.split(',').map(x=>x.replace(/[{}"“”]/g,'').trim()).filter(Boolean);
 }
 
-function parseDate(ld){
-  // "MM/DD/YYYY HH:MM" (heure locale stade, approx US Est)
+function parseDate(ld, stId){
+  // "MM/DD/YYYY HH:MM" = heure murale du stade -> timestamp UTC réel via fuseau du stade
   try{
     const [d,t] = ld.split(' ');
     const [mm,dd,yy] = d.split('/').map(Number);
     const [HH,MM] = t.split(':').map(Number);
-    return {ts:Date.UTC(yy,mm-1,dd,HH+EASTERN_OFFSET,MM), localHour:t, dd,mm,yy};
-  }catch(e){ return {ts:0,localHour:'',dd:0,mm:0,yy:0}; }
+    const st=STAD[stId]; const tz=st?st.tz:'America/New_York';
+    return {ts:wallToUtc(yy,mm-1,dd,HH,MM,tz), stadeHour:t};
+  }catch(e){ return {ts:0,stadeHour:''}; }
 }
 
 function statusOf(g){
@@ -290,7 +353,8 @@ function statusOf(g){
 }
 
 function normalize(g){
-  const d = parseDate(g.local_date);
+  const d = parseDate(g.local_date, g.stadium_id);
+  const pp = parisParts(d.ts);
   const homeId = g.home_team_id, awayId = g.away_team_id;
   return {
     id:g.id,
@@ -305,7 +369,10 @@ function normalize(g){
     isKo: (g.type||'group')!=='group',
     homeLabel:g.home_team_label||'', awayLabel:g.away_team_label||'',
     status:statusOf(g),
-    ts:d.ts, localHour:d.localHour, dd:d.dd, mm:d.mm, yy:d.yy
+    ts:d.ts, stadeHour:d.stadeHour,
+    pHour: d.ts?(pp.hour+':'+pp.minute):'',
+    dd:+pp.day, mm:+pp.month, yy:+pp.year, wday:pp.weekday,
+    stadiumId:g.stadium_id, stadium:STAD[g.stadium_id]||null
   };
 }
 
@@ -332,7 +399,7 @@ function setStatus(cls,txt){ const s=$('status'); s.className='nav-status '+cls;
 const MONTHS=['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
 const DAYS=['dim.','lun.','mar.','mer.','jeu.','ven.','sam.'];
 function dateKey(m){ return m.dd+'/'+m.mm+'/'+m.yy; }
-function dateLabel(m){ const dt=new Date(m.ts); return DAYS[dt.getUTCDay()]+' '+m.dd+' '+MONTHS[m.mm-1]; }
+function dateLabel(m){ return (m.wday||'')+' '+m.dd+' '+MONTHS[m.mm-1]; }
 
 function flagImg(url,cls){ return url?`<img src="${url}" alt="" loading="lazy">`:`<span class="mc-flag-ph"></span>`; }
 
@@ -387,13 +454,13 @@ function matchCardHTML(m){
   const cd = (m.status==='upcoming')?cardCountdown(m.ts):null;
   return `<div class="mcard ${live?'live':''} ${played?'played':''}" data-id="${m.id}">
     <div class="mc-left">
-      <div class="mc-hour">${(played||live)?'FT':m.localHour||'--'}</div>
+      <div class="mc-hour">${(played||live)?'FT':m.pHour||'--'}</div>
       <div class="mc-day">${m.dd?(m.dd+'/'+m.mm):''}</div>
     </div>
     <div class="mc-center">
       <div class="mc-row">${flagImg(m.homeFlag)}<span class="mc-name">${m.homeName}</span>${gsHome}</div>
       <div class="mc-row">${flagImg(m.awayFlag)}<span class="mc-name">${m.awayName}</span>${gsAway}</div>
-      <div class="mc-meta">${badge}${stat}${cd?`<span class="mc-cd">⏱ ${cd}</span>`:''}</div>
+      <div class="mc-meta">${badge}${stat}${cd?`<span class="mc-cd">⏱ ${cd}</span>`:''}<span class="mc-wx" id="wx-${m.id}"></span></div>
     </div>
   </div>`;
 }
@@ -428,6 +495,7 @@ function renderMatchs(){
     box.innerHTML=html;
   }
   box.querySelectorAll('.mcard').forEach(c=>c.addEventListener('click',()=>openModal(c.dataset.id)));
+  fillWeather(list);
 }
 
 /* ---------- CLASSEMENTS ---------- */
@@ -529,9 +597,16 @@ function openModal(id){
         ${sc?`<span class="m-num">${m.hs}</span><span class="m-vs">—</span><span class="m-num">${m.as}</span>`:`<span class="m-vs">vs</span>`}
         <div class="m-team">${flagImg(m.awayFlag)}<span class="nm">${m.awayName}</span></div>
       </div>
-      <div class="m-when">${m.dd?(dateLabel(m)+' · '+ (m.localHour||'')+' (heure du stade)'):''} ${m.status==='live'?' · 🔴 en cours':m.status==='played'?' · terminé':' · à venir'}</div>
+      <div class="m-when">${m.dd?(dateLabel(m)+' · '+m.pHour+' (heure de Paris)'):''} ${m.status==='live'?' · 🔴 en cours':m.status==='played'?' · terminé':' · à venir'}</div>
     </div>
     <div class="m-body">
+      ${m.stadium?`<div class="m-stade">
+        <div class="m-stade-top">
+          <div><div class="ms-name">📍 ${m.stadium.n}</div><div class="ms-city">${m.stadium.c}</div></div>
+          <a class="ms-maps" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(m.stadium.n+' '+m.stadium.c)}" target="_blank" rel="noopener">🗺️ Maps</a>
+        </div>
+        <div class="m-stade-sub">🕐 Coup d'envoi sur place : <b>${m.stadeHour||'—'}</b>${m.status!=='played'?' · <span id="mwx">…</span>':''}</div>
+      </div>`:''}
       ${body}
       <div class="m-info">
         <div class="m-ib"><div class="l">Phase</div><div class="v">${m.isKo?comp:'Groupe '+m.group}</div></div>
@@ -539,6 +614,9 @@ function openModal(id){
       </div>
     </div>`;
   $('ov').classList.add('open'); document.body.style.overflow='hidden';
+  if(m.stadium && m.status!=='played'){
+    fetchWeather(m.stadium.lat,m.stadium.lon,m.stadiumId).then(w=>{ const e=document.getElementById('mwx'); if(w&&e) e.innerHTML=`${w.i} ${w.t}°C sur place`; else if(e) e.textContent=''; });
+  }
 }
 function closeModal(){ $('ov').classList.remove('open'); document.body.style.overflow=''; }
 $('ovBg').addEventListener('click',closeModal);
